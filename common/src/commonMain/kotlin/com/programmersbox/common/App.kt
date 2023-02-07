@@ -5,10 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material.icons.filled.MenuOpen
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,7 +18,9 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun App() {
+internal fun App(
+    onShareClick: (SavedQuote) -> Unit
+) {
     val scope = rememberCoroutineScope()
     val viewModel = remember { QuoteViewModel(scope) }
     val state = rememberDrawerState(DrawerValue.Closed)
@@ -67,9 +66,9 @@ internal fun App() {
                     actions = {
                         NavigationBarItem(
                             selected = false,
-                            onClick = { scope.launch { state.open() } },
-                            label = { Text(viewModel.savedQuotes.size.toString()) },
-                            icon = { Icon(Icons.Default.Favorite, null) }
+                            onClick = { viewModel.currentQuote?.let { onShareClick(it.toSavedQuote()) } },
+                            label = { Text("Share") },
+                            icon = { Icon(Icons.Default.Share, null) }
                         )
 
                         NavigationBarItem(
