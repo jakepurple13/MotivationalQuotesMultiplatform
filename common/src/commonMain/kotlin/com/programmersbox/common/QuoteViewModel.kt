@@ -11,7 +11,6 @@ import kotlinx.coroutines.launch
 internal class QuoteViewModel(private val scope: CoroutineScope) {
 
     private val service = ApiService()
-    private val stopwatch = Stopwatch()
 
     var state by mutableStateOf(NetworkState.NotLoading)
         private set
@@ -44,23 +43,6 @@ internal class QuoteViewModel(private val scope: CoroutineScope) {
                 }
             }
             .launchIn(scope)
-
-        stopwatch.time
-            .combine(snapshotFlow { state }.distinctUntilChanged()) { _, s -> s }
-            .onEach {
-                newQuoteAvailable = when (it) {
-                    NetworkState.Loading -> false
-                    NetworkState.NotLoading -> {
-                        delay(5000)
-                        true
-                    }
-
-                    NetworkState.Error -> {
-                        true
-                    }
-                }
-            }
-            .launchIn(scope)
     }
 
     fun newQuote() {
@@ -77,6 +59,10 @@ internal class QuoteViewModel(private val scope: CoroutineScope) {
                     NetworkState.Error
                 }
             )
+            scope.launch {
+                delay(5000)
+                newQuoteAvailable = true
+            }
         }
     }
 
