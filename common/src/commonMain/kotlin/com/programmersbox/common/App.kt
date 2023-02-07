@@ -1,7 +1,6 @@
 package com.programmersbox.common
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -67,16 +66,30 @@ internal fun App() {
                 BottomAppBar(
                     actions = {
                         NavigationBarItem(
+                            selected = false,
+                            onClick = { scope.launch { state.open() } },
+                            label = { Text(viewModel.savedQuotes.size.toString()) },
+                            icon = { Icon(Icons.Default.Favorite, null) }
+                        )
+
+                        NavigationBarItem(
                             selected = viewModel.newQuoteAvailable,
                             onClick = { viewModel.newQuote() },
-                            label = { Text("New Quote") },
-                            icon = { Icon(Icons.Default.FormatQuote, null) },
+                            label = { if (viewModel.newQuoteAvailable) Text("New Quote") },
+                            icon = {
+                                if (viewModel.newQuoteAvailable) {
+                                    Icon(Icons.Default.FormatQuote, null)
+                                } else {
+                                    CircularProgressIndicator()
+                                }
+                            },
                             enabled = viewModel.newQuoteAvailable
                         )
                     },
                     floatingActionButton = {
                         ExtendedFloatingActionButton(
-                            text = { Text(if (viewModel.isCurrentQuoteSaved) "Unfavorite" else "Favorite") },
+                            expanded = viewModel.isCurrentQuoteSaved,
+                            text = { Text("Favorited") },
                             icon = {
                                 Crossfade(viewModel.isCurrentQuoteSaved) { target ->
                                     Icon(
@@ -93,8 +106,7 @@ internal fun App() {
                                     true -> viewModel.removeQuote(viewModel.currentQuote)
                                     false -> viewModel.saveQuote(viewModel.currentQuote)
                                 }
-                            },
-                            modifier = Modifier.animateContentSize()
+                            }
                         )
                     }
                 )
@@ -117,7 +129,8 @@ internal fun App() {
                             Text(
                                 viewModel.currentQuote?.q.orEmpty(),
                                 textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(horizontal = 20.dp)
                             )
                             Text(
                                 "By",

@@ -39,7 +39,7 @@ internal class QuoteViewModel(private val scope: CoroutineScope) {
                 if (it.isEmpty()) {
                     newQuote()
                 } else {
-                    currentQuote = it.lastOrNull()?.toQuote()
+                    currentQuote = it.randomOrNull()?.toQuote()
                 }
             }
             .launchIn(scope)
