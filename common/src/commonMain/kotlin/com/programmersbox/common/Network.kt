@@ -5,7 +5,6 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -25,7 +24,7 @@ internal class ApiService {
         }
     }
 
-    suspend fun getQuote() = runCatching { client.get(url).body<Quote>() }
+    suspend fun getQuote() = runCatching { client.get(url).body<List<Quote>>().first() }
 
     companion object {
         private const val url = "https://zenquotes.io/api/random"

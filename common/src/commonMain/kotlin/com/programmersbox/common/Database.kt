@@ -57,15 +57,25 @@ public class QuoteDatabase {
         .mapNotNull { it.quotes.toList() }
 
     internal suspend fun saveQuote(quote: Quote) {
-        realm.updateInfo<SavedQuotes> { it?.quotes?.add(quote.toSavedQuote()) }
+        realm.updateInfo<SavedQuotes> {
+            if (it?.quotes?.any { q -> q.quote == quote.q } == false) {
+                it.quotes.add(quote.toSavedQuote())
+            }
+        }
     }
 
     internal suspend fun removeQuote(quote: Quote) {
-        realm.updateInfo<SavedQuotes> { it?.quotes?.remove(quote.toSavedQuote()) }
+        realm.updateInfo<SavedQuotes> {
+            if (it?.quotes?.any { q -> q.quote == quote.q } == true) {
+                it.quotes.removeAll { q -> q.quote == quote.q }
+            }
+        }
     }
 
     internal suspend fun removeQuote(quote: SavedQuote) {
-        realm.updateInfo<SavedQuotes> { it?.quotes?.remove(quote) }
+        realm.updateInfo<SavedQuotes> {
+            it?.quotes?.removeAll { q -> q.quote == quote.quote }
+        }
     }
 }
 

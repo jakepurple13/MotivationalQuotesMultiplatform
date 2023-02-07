@@ -1,23 +1,22 @@
 package com.programmersbox.common
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.MenuOpen
-import androidx.compose.material.icons.filled.RequestQuote
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -43,7 +42,9 @@ internal fun App() {
                                 headlineText = { Text(quote.quote) },
                                 overlineText = { Text(quote.author) },
                                 trailingContent = {
-                                    IconButton(onClick = {  })
+                                    IconButton(onClick = { viewModel.removeQuote(quote) }) {
+                                        Icon(Icons.Default.Favorite, null)
+                                    }
                                 }
                             )
                         }
@@ -66,27 +67,69 @@ internal fun App() {
                 BottomAppBar(
                     actions = {
                         NavigationBarItem(
-                            selected = false,
+                            selected = viewModel.newQuoteAvailable,
                             onClick = { viewModel.newQuote() },
                             label = { Text("New Quote") },
-                            icon = { Icon(Icons.Default.RequestQuote, null) }
+                            icon = { Icon(Icons.Default.FormatQuote, null) },
+                            enabled = viewModel.newQuoteAvailable
                         )
                     },
                     floatingActionButton = {
-
+                        ExtendedFloatingActionButton(
+                            text = { Text(if (viewModel.isCurrentQuoteSaved) "Unfavorite" else "Favorite") },
+                            icon = {
+                                Crossfade(viewModel.isCurrentQuoteSaved) { target ->
+                                    Icon(
+                                        when (target) {
+                                            true -> Icons.Default.Favorite
+                                            false -> Icons.Default.FavoriteBorder
+                                        },
+                                        null
+                                    )
+                                }
+                            },
+                            onClick = {
+                                when (viewModel.isCurrentQuoteSaved) {
+                                    true -> viewModel.removeQuote(viewModel.currentQuote)
+                                    false -> viewModel.saveQuote(viewModel.currentQuote)
+                                }
+                            },
+                            modifier = Modifier.animateContentSize()
+                        )
                     }
                 )
             }
         ) { padding ->
             Box(
-                modifier = Modifier.padding(padding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(4.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Crossfade(viewModel.state) { target ->
                     when (target) {
-                        NetworkState.Loading -> CircularProgressIndicator()
-                        NetworkState.NotLoading -> Text(viewModel.currentQuote.q.orEmpty())
+                        NetworkState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                         NetworkState.Error -> Text("Something went wrong, please try again")
+                        NetworkState.NotLoading -> Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                viewModel.currentQuote?.q.orEmpty(),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                "By",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Text(
+                                viewModel.currentQuote?.a.orEmpty(),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
                     }
                 }
             }
