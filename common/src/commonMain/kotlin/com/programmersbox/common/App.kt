@@ -1,17 +1,17 @@
 package com.programmersbox.common
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -34,17 +34,51 @@ internal fun App(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    items(viewModel.savedQuotes) { quote ->
-                        ElevatedCard(onClick = { viewModel.setQuoteFromSaved(quote) }) {
-                            ListItem(
-                                headlineText = { Text(quote.quote) },
-                                overlineText = { Text(quote.author) },
-                                trailingContent = {
-                                    IconButton(onClick = { viewModel.removeQuote(quote) }) {
-                                        Icon(Icons.Default.Favorite, null)
+                    viewModel.groupedSavedQuotes.forEach {
+                        var expand by mutableStateOf(it.value.size == 1)
+
+                        if (it.value.size > 1) {
+                            item {
+                                Surface(
+                                    onClick = { expand = !expand }
+                                ) {
+                                    ListItem(
+                                        leadingContent = { Text(it.value.size.toString()) },
+                                        headlineText = { Text(it.key) },
+                                        trailingContent = {
+                                            Icon(
+                                                Icons.Default.ArrowDropDown,
+                                                null,
+                                                modifier = Modifier.rotate(animateFloatAsState(if (expand) 180f else 0f).value)
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        item {
+                            Column(
+                                modifier = Modifier.animateContentSize(),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                if (expand) {
+                                    it.value.forEach { quote ->
+                                        ElevatedCard(onClick = { viewModel.setQuoteFromSaved(quote) }) {
+                                            ListItem(
+                                                headlineText = { Text(quote.quote) },
+                                                overlineText = { Text(quote.author) },
+                                                trailingContent = {
+                                                    IconButton(onClick = { viewModel.removeQuote(quote) }) {
+                                                        Icon(Icons.Default.Favorite, null)
+                                                    }
+                                                }
+                                            )
+                                        }
                                     }
                                 }
-                            )
+                                Divider()
+                            }
                         }
                     }
                 }
@@ -125,22 +159,24 @@ internal fun App(
                         NetworkState.NotLoading -> Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                viewModel.currentQuote?.q.orEmpty(),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(horizontal = 20.dp)
-                            )
-                            Text(
-                                "By",
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                            Text(
-                                viewModel.currentQuote?.a.orEmpty(),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.labelSmall
-                            )
+                            viewModel.currentQuote?.let { quote ->
+                                Text(
+                                    quote.q.orEmpty(),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(horizontal = 20.dp)
+                                )
+                                Text(
+                                    "By",
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                                Text(
+                                    quote.a.orEmpty(),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
                         }
                     }
                 }

@@ -22,10 +22,18 @@ internal class QuoteViewModel(private val scope: CoroutineScope) {
 
     val savedQuotes = mutableStateListOf<SavedQuote>()
 
+    val groupedSavedQuotes by derivedStateOf {
+        savedQuotes
+            .sortedBy { it.author }
+            .groupBy { it.author }
+    }
+
     val isCurrentQuoteSaved by derivedStateOf { savedQuotes.any { it.quote == currentQuote?.q } }
 
     var newQuoteAvailable by mutableStateOf(true)
         private set
+
+    private var count by mutableStateOf(0)
 
     init {
         flow { emit(db.getQuotes()) }
@@ -43,12 +51,32 @@ internal class QuoteViewModel(private val scope: CoroutineScope) {
                 }
             }
             .launchIn(scope)
+
+        snapshotFlow { count }
+            .filter { it <= 4 }
+            .debounce(30000)
+            .onEach {
+                newQuoteAvailable = true
+                count = 0
+            }
+            .launchIn(scope)
+
+        snapshotFlow { count }
+            .filter { it > 4 }
+            .distinctUntilChanged()
+            .onEach {
+                newQuoteAvailable = false
+                delay(30000)
+                newQuoteAvailable = true
+                count = 0
+            }
+            .launchIn(scope)
     }
 
     fun newQuote() {
         scope.launch {
             state = NetworkState.Loading
-            newQuoteAvailable = false
+            count++
             state = service.getQuote().fold(
                 onSuccess = {
                     currentQuote = it
@@ -59,10 +87,6 @@ internal class QuoteViewModel(private val scope: CoroutineScope) {
                     NetworkState.Error
                 }
             )
-            scope.launch {
-                delay(5000)
-                newQuoteAvailable = true
-            }
         }
     }
 
