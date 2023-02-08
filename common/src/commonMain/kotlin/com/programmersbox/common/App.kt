@@ -1,8 +1,8 @@
 package com.programmersbox.common
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -12,11 +12,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 internal fun App(
     onShareClick: (SavedQuote) -> Unit
@@ -64,7 +65,56 @@ internal fun App(
                             ) {
                                 if (expand) {
                                     it.value.forEach { quote ->
-                                        ElevatedCard(onClick = { viewModel.setQuoteFromSaved(quote) }) {
+                                        var remove by remember { mutableStateOf(false) }
+                                        AnimatedContent(
+                                            remove,
+                                            transitionSpec = {
+                                                if (targetState > initialState) {
+                                                    slideInHorizontally { width -> -width } + fadeIn() with
+                                                            slideOutHorizontally { width -> width } + fadeOut()
+                                                } else {
+                                                    slideInHorizontally { width -> width } + fadeIn() with
+                                                            slideOutHorizontally { width -> -width } + fadeOut()
+                                                }.using(SizeTransform(clip = false))
+                                            }
+                                        ) { target ->
+                                            if (target) {
+                                                OutlinedCard(
+                                                    border = BorderStroke(
+                                                        CardDefaults.outlinedCardBorder().width,
+                                                        Color.Red
+                                                    )
+                                                ) {
+                                                    ListItem(
+                                                        leadingContent = {
+                                                            IconButton(onClick = { remove = false }) {
+                                                                Icon(Icons.Default.Close, null)
+                                                            }
+                                                        },
+                                                        headlineText = { Text("Are you sre you want to remove this?") },
+                                                        supportingText = { Text(quote.quote) },
+                                                        trailingContent = {
+                                                            IconButton(onClick = { viewModel.removeQuote(quote) }) {
+                                                                Icon(Icons.Default.Check, null)
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                            } else {
+                                                ElevatedCard(onClick = { viewModel.setQuoteFromSaved(quote) }) {
+                                                    ListItem(
+                                                        headlineText = { Text(quote.quote) },
+                                                        overlineText = { Text(quote.author) },
+                                                        trailingContent = {
+                                                            IconButton(onClick = { remove = true }) {
+                                                                Icon(Icons.Default.Favorite, null)
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        /*ElevatedCard(onClick = { viewModel.setQuoteFromSaved(quote) }) {
                                             ListItem(
                                                 headlineText = { Text(quote.quote) },
                                                 overlineText = { Text(quote.author) },
@@ -74,7 +124,7 @@ internal fun App(
                                                     }
                                                 }
                                             )
-                                        }
+                                        }*/
                                     }
                                 }
                                 Divider()
