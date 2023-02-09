@@ -1,8 +1,10 @@
 package com.programmersbox.common
 
+import androidx.compose.runtime.staticCompositionLocalOf
 import io.realm.kotlin.MutableRealm
 import io.realm.kotlin.Realm
 import io.realm.kotlin.RealmConfiguration
+import io.realm.kotlin.ext.asFlow
 import io.realm.kotlin.ext.query
 import io.realm.kotlin.ext.realmListOf
 import io.realm.kotlin.log.LogLevel
@@ -10,12 +12,14 @@ import io.realm.kotlin.migration.AutomaticSchemaMigration
 import io.realm.kotlin.mongodb.App
 import io.realm.kotlin.mongodb.AppConfiguration
 import io.realm.kotlin.mongodb.Credentials
+import io.realm.kotlin.mongodb.User
 import io.realm.kotlin.mongodb.sync.SyncConfiguration
 import io.realm.kotlin.types.RealmList
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.RealmUUID
 import io.realm.kotlin.types.annotations.PrimaryKey
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapNotNull
 
 internal class SavedQuotes : RealmObject {
@@ -44,6 +48,8 @@ internal fun Quote.toSavedQuote() = SavedQuote().apply {
     htmlFormatted = h.orEmpty()
     _id = quote
 }
+
+internal val LocalQuoteDb = staticCompositionLocalOf { QuoteDatabase() }
 
 public class QuoteDatabase {
     private companion object {
@@ -76,17 +82,43 @@ public class QuoteDatabase {
         )
     }
 
-    public suspend fun login() {
-        if (USE_SYNC) {
-            app.login(Credentials.emailPassword(BuildKonfig.username, BuildKonfig.password))
+    public fun isLoggedIn(): Boolean = app.currentUser != null || !USE_SYNC
+
+    public suspend fun login(username: String = BuildKonfig.username, password: String = BuildKonfig.password): User? {
+        return if (USE_SYNC) {
+            app.login(Credentials.emailPassword(username, password))
+        } else {
+            null
         }
     }
 
-    public fun getQuotes(): Flow<List<SavedQuote>> = realm.query(SavedQuotes::class)
-        .asFlow()
-        .mapNotNull {
-            it.list.lastOrNull() ?: realm.write { copyToRealm(SavedQuotes().apply { _id = app.currentUser!!.id }) }
+    public suspend fun registration(password: String, email: String) {
+        if (USE_SYNC) {
+            try {
+                app.emailPasswordAuth.registerUser(email = email, password = password)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
+    }
+
+    private suspend fun initialDb(): SavedQuotes {
+        val f = realm.query(SavedQuotes::class).first().find()
+        return f ?: realm.write { copyToRealm(SavedQuotes().apply { _id = "hello" }) }
+    }
+
+    public suspend fun getQuotes(): Flow<List<SavedQuote>> = if (USE_SYNC) {
+        realm.query(SavedQuotes::class)
+            .asFlow()
+            .mapNotNull {
+                it.list.lastOrNull() ?: realm.write { copyToRealm(SavedQuotes().apply { _id = app.currentUser!!.id }) }
+            }
+    } else {
+        initialDb()
+            .asFlow()
+            .mapNotNull { it.obj }
+            .distinctUntilChanged()
+    }
         .mapNotNull { it.quotes.toList() }
 
     internal suspend fun saveQuote(quote: Quote) {
