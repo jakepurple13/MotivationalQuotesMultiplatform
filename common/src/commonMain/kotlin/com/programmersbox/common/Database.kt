@@ -18,9 +18,7 @@ import io.realm.kotlin.types.RealmList
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.RealmUUID
 import io.realm.kotlin.types.annotations.PrimaryKey
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.*
 
 internal class SavedQuotes : RealmObject {
     var quotes: RealmList<SavedQuote> = realmListOf()
@@ -107,18 +105,19 @@ public class QuoteDatabase {
         return f ?: realm.write { copyToRealm(SavedQuotes().apply { _id = "hello" }) }
     }
 
-    public suspend fun getQuotes(): Flow<List<SavedQuote>> = if (USE_SYNC) {
+    public fun getQuotes(): Flow<List<SavedQuote>> = if (USE_SYNC) {
         realm.query(SavedQuotes::class)
             .asFlow()
             .mapNotNull {
-                it.list.lastOrNull() ?: realm.write { copyToRealm(SavedQuotes().apply { _id = app.currentUser!!.id }) }
+                it.list.firstOrNull() ?: realm.write { copyToRealm(SavedQuotes().apply { _id = app.currentUser!!.id }) }
             }
     } else {
-        initialDb()
-            .asFlow()
+        flow { emit(initialDb().asFlow()) }
+            .flattenConcat()
             .mapNotNull { it.obj }
             .distinctUntilChanged()
     }
+        .onEach { println(it.quotes.size) }
         .mapNotNull { it.quotes.toList() }
 
     internal suspend fun saveQuote(quote: Quote) {

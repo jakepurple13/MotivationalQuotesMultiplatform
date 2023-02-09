@@ -1,8 +1,11 @@
 package com.programmersbox.common
 
 import androidx.compose.runtime.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class)
 internal class QuoteViewModel(private val scope: CoroutineScope, private val db: QuoteDatabase) {
@@ -55,23 +58,20 @@ internal class QuoteViewModel(private val scope: CoroutineScope, private val db:
     }
 
     fun login() {
-        scope.launch {
-            async { db.login() }.await()
-            db.getQuotes()
-                .onEach {
-                    savedQuotes.clear()
-                    savedQuotes.addAll(it)
+        db.getQuotes()
+            .onEach {
+                savedQuotes.clear()
+                savedQuotes.addAll(it)
+            }
+            .filter { currentQuote == null }
+            .onEach {
+                if (it.isEmpty()) {
+                    newQuote()
+                } else {
+                    currentQuote = it.randomOrNull()?.toQuote()
                 }
-                .filter { currentQuote == null }
-                .onEach {
-                    if (it.isEmpty()) {
-                        newQuote()
-                    } else {
-                        currentQuote = it.randomOrNull()?.toQuote()
-                    }
-                }
-                .launchIn(scope)
-        }
+            }
+            .launchIn(scope)
     }
 
     fun newQuote() {
