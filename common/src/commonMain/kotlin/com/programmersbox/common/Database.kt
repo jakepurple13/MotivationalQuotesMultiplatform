@@ -112,8 +112,7 @@ public class QuoteDatabase {
                 it.list.firstOrNull() ?: realm.write { copyToRealm(SavedQuotes().apply { _id = app.currentUser!!.id }) }
             }
     } else {
-        flow { emit(initialDb().asFlow()) }
-            .flattenConcat()
+        flow { emitAll(initialDb().asFlow()) }
             .mapNotNull { it.obj }
             .distinctUntilChanged()
     }
