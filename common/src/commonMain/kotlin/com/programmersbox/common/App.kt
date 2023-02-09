@@ -114,17 +114,6 @@ internal fun App(
                                                 }
                                             }
                                         }
-                                        /*ElevatedCard(onClick = { viewModel.setQuoteFromSaved(quote) }) {
-                                            ListItem(
-                                                headlineText = { Text(quote.quote) },
-                                                overlineText = { Text(quote.author) },
-                                                trailingContent = {
-                                                    IconButton(onClick = { viewModel.removeQuote(quote) }) {
-                                                        Icon(Icons.Default.Favorite, null)
-                                                    }
-                                                }
-                                            )
-                                        }*/
                                     }
                                 }
                                 Divider()
@@ -172,7 +161,7 @@ internal fun App(
                     floatingActionButton = {
                         ExtendedFloatingActionButton(
                             expanded = viewModel.isCurrentQuoteSaved,
-                            text = { Text("Favorited") },
+                            text = { Text("Saved") },
                             icon = {
                                 Crossfade(viewModel.isCurrentQuoteSaved) { target ->
                                     Icon(

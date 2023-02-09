@@ -1,11 +1,8 @@
 package com.programmersbox.common
 
 import androidx.compose.runtime.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class)
 internal class QuoteViewModel(private val scope: CoroutineScope) {
@@ -36,21 +33,23 @@ internal class QuoteViewModel(private val scope: CoroutineScope) {
     private var count by mutableStateOf(0)
 
     init {
-        flow { emit(db.getQuotes()) }
-            .flattenConcat()
-            .onEach {
-                savedQuotes.clear()
-                savedQuotes.addAll(it)
-            }
-            .filter { currentQuote == null }
-            .onEach {
-                if (it.isEmpty()) {
-                    newQuote()
-                } else {
-                    currentQuote = it.randomOrNull()?.toQuote()
+        scope.launch {
+            async { db.login() }.await()
+            db.getQuotes()
+                .onEach {
+                    savedQuotes.clear()
+                    savedQuotes.addAll(it)
                 }
-            }
-            .launchIn(scope)
+                .filter { currentQuote == null }
+                .onEach {
+                    if (it.isEmpty()) {
+                        newQuote()
+                    } else {
+                        currentQuote = it.randomOrNull()?.toQuote()
+                    }
+                }
+                .launchIn(scope)
+        }
 
         snapshotFlow { count }
             .filter { it <= 4 }

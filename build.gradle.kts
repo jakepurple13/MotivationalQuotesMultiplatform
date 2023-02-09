@@ -22,5 +22,6 @@ plugins {
 buildscript {
     dependencies {
         classpath("io.realm.kotlin:gradle-plugin:1.5.2")
+        classpath("com.codingfeline.buildkonfig:buildkonfig-gradle-plugin:0.13.3")
     }
 }

@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+
 plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
@@ -5,6 +7,7 @@ plugins {
     kotlin("native.cocoapods")
     id("io.realm.kotlin")
     id("kotlinx-serialization")
+    id("com.codingfeline.buildkonfig")
 }
 
 group = "com.programmersbox"
@@ -41,6 +44,7 @@ kotlin {
                 api(compose.materialIconsExtended)
                 api(compose.material3)
                 api("io.realm.kotlin:library-base:1.5.2")
+                api("io.realm.kotlin:library-sync:1.5.2")
                 api("io.ktor:ktor-client-core:$ktorVersion")
                 api("io.ktor:ktor-client-content-negotiation:$ktorVersion")
                 api("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
@@ -106,5 +110,31 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+buildkonfig {
+    packageName = "com.programmersbox.common"
+    // objectName = "YourAwesomeConfig"
+    // exposeObjectWithName = "YourAwesomePublicConfig"
+
+    val localProps = gradleLocalProperties(rootDir)
+
+    defaultConfigs {
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "appId",
+            localProps.getProperty("realmDbAppId")
+        )
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "username",
+            localProps.getProperty("realmDbUsername")
+        )
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "password",
+            localProps.getProperty("realmDbPassword")
+        )
     }
 }
